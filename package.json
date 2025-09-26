@@ -1,0 +1,16 @@
+{
+  "name": "pnkster-burn-tracker",
+  "version": "1.0.0",
+  "description": "A serverless-powered tracker for $pnkster token burns.",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'No start script. Deploy to Vercel to run.'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/analytics": "^1.3.1"
+  }
+}
+
