@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Token Burn Tracker</title>
+    <title>$pnkstr Burn Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,15 +58,10 @@
     <!-- Main Content -->
     <div class="relative min-h-screen flex flex-col items-center justify-center p-4 z-10">
         <div id="main-container" class="w-full max-w-4xl text-center bg-black bg-opacity-50 p-6 md:p-8 rounded-2xl border border-pink-500/30 shadow-2xl shadow-pink-500/20">
-            
-            <!-- Token Selector Buttons -->
-            <div id="token-selector" class="flex justify-center gap-4 mb-6">
-                <!-- Buttons will be dynamically inserted here -->
-            </div>
 
             <!-- Header -->
             <header class="mb-2">
-                <h1 id="token-title" class="text-4xl md:text-5xl font-bold text-pink-400 fiery-text">
+                <h1 class="text-5xl md:text-6xl font-bold text-pink-400 fiery-text">
                     $pnkstr burned
                 </h1>
             </header>
@@ -126,49 +121,13 @@
         // --- CONFIGURATION ---
         const RPC_URL = 'https://rpc.ankr.com/eth/a5738491e6c6cf706f5fe88588fb63e12abc8b9a7076ef9bee8e2f1f8a6462a4';
         const DEAD_ADDRESS = '0x000000000000000000000000000000000000dead';
+        const TOKEN_CONTRACT = '0xc50673EDb3A7b94E8CAD8a7d4E0cD68864E33eDF';
+        const TOKEN_DECIMALS = 18;
         const UPDATE_INTERVAL_MS = 20000; // 20 seconds
         const BLOCKS_IN_24_HOURS = 7200; // Approx. based on 12s block time
         const LOG_QUERY_CHUNK_SIZE = 2000; // Max blocks to query for logs at once
 
-        const tokens = {
-            pnkster: {
-                name: '$pnkstr',
-                contract: '0xc50673EDb3A7b94E8CAD8a7d4E0cD68864E33eDF',
-                decimals: 18,
-                theme: {
-                    border: 'border-pink-500/30',
-                    shadow: 'shadow-pink-500/20',
-                    headerText: 'text-pink-400',
-                    gradient: ['from-pink-400', 'via-fuchsia-500', 'to-purple-600'],
-                    statTitle: 'text-pink-400/80',
-                    statValue: 'text-fuchsia-300',
-                    link: 'text-pink-500',
-                    linkHover: 'hover:text-fuchsia-400',
-                    activeButton: ['bg-pink-500', 'border-pink-400'],
-                    particleColor: () => `rgba(255, ${Math.random() * 50}, ${100 + Math.random() * 100}, 1)`
-                }
-            },
-            meebster: {
-                name: '$meebstr',
-                contract: '0xc9b2c00f31b210fcea1242d91307a5b1e3b2be68',
-                decimals: 18,
-                theme: {
-                    border: 'border-blue-500/30',
-                    shadow: 'shadow-blue-500/20',
-                    headerText: 'text-sky-400',
-                    gradient: ['from-sky-400', 'via-blue-500', 'to-indigo-600'],
-                    statTitle: 'text-sky-400/80',
-                    statValue: 'text-blue-300',
-                    link: 'text-sky-500',
-                    linkHover: 'hover:text-blue-400',
-                    activeButton: ['bg-blue-500', 'border-blue-400'],
-                    particleColor: () => `rgba(${Math.floor(80 + Math.random() * 50)}, ${Math.floor(120 + Math.random() * 80)}, 255, 1)`
-                }
-            }
-        };
-
         // --- DOM ELEMENTS ---
-        const mainContainerEl = document.getElementById('main-container');
         const burnedAmountEl = document.getElementById('burned-amount');
         const burnedAmountContainerEl = document.getElementById('burned-amount-container');
         const circulatingSupplyEl = document.getElementById('circulating-supply');
@@ -176,49 +135,45 @@
         const burned24hEl = document.getElementById('burned-24h');
         const statusLightEl = document.getElementById('status-light');
         const statusTextEl = document.getElementById('status-text');
-        const tokenTitleEl = document.getElementById('token-title');
-        const etherscanLinkEl = document.getElementById('etherscan-link');
-        const tokenSelectorContainer = document.getElementById('token-selector');
 
         // --- STATE ---
         let lastBurnedAmount = 0;
-        let currentTokenId = 'pnkster'; // Default token
 
-        async function fetchBurnedAmount(tokenContract, tokenDecimals) {
+        async function fetchBurnedAmount() {
             const data = `0x70a08231000000000000000000000000${DEAD_ADDRESS.substring(2)}`;
             const response = await fetch(RPC_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     jsonrpc: '2.0', id: 1, method: 'eth_call',
-                    params: [{ to: tokenContract, data }, 'latest']
+                    params: [{ to: TOKEN_CONTRACT, data }, 'latest']
                 }),
             });
             if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
             const json = await response.json();
             if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
             const balanceBigInt = BigInt(json.result);
-            return Number(balanceBigInt) / (10 ** tokenDecimals);
+            return Number(balanceBigInt) / (10 ** TOKEN_DECIMALS);
         }
 
-        async function fetchTotalSupply(tokenContract, tokenDecimals) {
+        async function fetchTotalSupply() {
             const data = '0x18160ddd';
             const response = await fetch(RPC_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     jsonrpc: '2.0', id: 2, method: 'eth_call',
-                    params: [{ to: tokenContract, data }, 'latest']
+                    params: [{ to: TOKEN_CONTRACT, data }, 'latest']
                 }),
             });
             if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
             const json = await response.json();
             if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
             const supplyBigInt = BigInt(json.result);
-            return Number(supplyBigInt) / (10 ** tokenDecimals);
+            return Number(supplyBigInt) / (10 ** TOKEN_DECIMALS);
         }
         
-        async function fetch24hBurn(tokenContract, tokenDecimals) {
+        async function fetch24hBurn() {
             try {
                 const blockNumResponse = await fetch(RPC_URL, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -238,7 +193,7 @@
                         body: JSON.stringify({
                             jsonrpc: '2.0', id: 4, method: 'eth_getLogs',
                             params: [{
-                                fromBlock: `0x${fromBlock.toString(16)}`, toBlock: `0x${toBlock.toString(16)}`, address: tokenContract,
+                                fromBlock: `0x${fromBlock.toString(16)}`, toBlock: `0x${toBlock.toString(16)}`, address: TOKEN_CONTRACT,
                                 topics: [ transferEventSignature, null, paddedDeadAddress ]
                             }]
                         }),
@@ -249,7 +204,7 @@
                 }
                 let totalBurned24h = BigInt(0);
                 for (const log of allLogs) { totalBurned24h += BigInt(log.data); }
-                return Number(totalBurned24h) / (10 ** tokenDecimals);
+                return Number(totalBurned24h) / (10 ** TOKEN_DECIMALS);
             } catch (error) {
                 console.error("Failed to fetch 24h burn amount:", error);
                 return 0;
@@ -258,22 +213,20 @@
 
         async function updateStats() {
             try {
-                const activeToken = tokens[currentTokenId];
-                const { contract, decimals } = activeToken;
                 const [burnedAmount, totalSupply, burned24h] = await Promise.all([
-                    fetchBurnedAmount(contract, decimals),
-                    fetchTotalSupply(contract, decimals),
-                    fetch24hBurn(contract, decimals)
+                    fetchBurnedAmount(),
+                    fetchTotalSupply(),
+                    fetch24hBurn()
                 ]);
-                updateDisplay(activeToken, burnedAmount, totalSupply, burned24h);
+                updateDisplay(burnedAmount, totalSupply, burned24h);
                 updateStatus('Connected', 'bg-green-500');
             } catch (error) {
-                console.error(`Failed to fetch stats for ${currentTokenId}:`, error);
+                console.error(`Failed to fetch stats:`, error);
                 updateStatus('Error', 'bg-red-500');
             }
         }
 
-        function updateDisplay(activeToken, burnedAmount, totalSupply, burned24h) {
+        function updateDisplay(burnedAmount, totalSupply, burned24h) {
             const circulatingSupply = totalSupply - burnedAmount;
             const percentageBurned = (burnedAmount / totalSupply) * 100;
             const formattedBurned = burnedAmount.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -281,8 +234,6 @@
             const formattedPercentage = `${percentageBurned.toFixed(2)}%`;
             const formattedBurned24h = burned24h.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
-            tokenTitleEl.textContent = `${activeToken.name} burned`;
-            etherscanLinkEl.href = `https://etherscan.io/token/${activeToken.contract}?a=${DEAD_ADDRESS}`;
             burnedAmountEl.textContent = formattedBurned;
             circulatingSupplyEl.textContent = formattedCirculating;
             percentageBurnedEl.textContent = formattedPercentage;
@@ -296,68 +247,6 @@
             lastBurnedAmount = burnedAmount;
         }
 
-        function applyTheme(theme) {
-            const allThemeClasses = Object.values(tokens)
-                .flatMap(t => Object.values(t.theme))
-                .flat()
-                .filter(item => typeof item === 'string');
-            
-            mainContainerEl.classList.remove(...allThemeClasses);
-            mainContainerEl.classList.add(theme.border, theme.shadow);
-            
-            tokenTitleEl.classList.remove(...allThemeClasses);
-            tokenTitleEl.classList.add(theme.headerText);
-
-            burnedAmountContainerEl.classList.remove(...allThemeClasses);
-            burnedAmountContainerEl.classList.add(...theme.gradient);
-            
-            document.querySelectorAll('.mt-10 h2').forEach(el => {
-                el.classList.remove(...allThemeClasses);
-                el.classList.add(theme.statTitle);
-            });
-            document.querySelectorAll('.mt-10 p').forEach(el => {
-                el.classList.remove(...allThemeClasses);
-                el.classList.add(theme.statValue);
-            });
-            document.querySelectorAll('footer a').forEach(link => {
-                link.classList.remove(...allThemeClasses);
-                link.classList.add(theme.link, theme.linkHover);
-            });
-        }
-
-        function createTokenButtons() {
-            tokenSelectorContainer.innerHTML = '';
-            Object.keys(tokens).forEach(tokenId => {
-                const token = tokens[tokenId];
-                const button = document.createElement('button');
-                button.textContent = token.name;
-                button.dataset.tokenId = tokenId;
-                button.className = 'px-4 py-2 rounded-lg border-2 font-semibold transition-colors duration-300';
-                if (tokenId === currentTokenId) {
-                    button.classList.add(...token.theme.activeButton, 'text-white', 'cursor-default');
-                } else {
-                    button.classList.add('bg-gray-800/50', 'border-gray-600', 'hover:bg-gray-700', 'hover:border-gray-500');
-                }
-                button.addEventListener('click', () => switchToken(tokenId));
-                tokenSelectorContainer.appendChild(button);
-            });
-        }
-
-        function switchToken(newTokenId) {
-            if (newTokenId === currentTokenId) return;
-            currentTokenId = newTokenId;
-            lastBurnedAmount = 0;
-            
-            applyTheme(tokens[newTokenId].theme);
-            createTokenButtons();
-
-            burnedAmountEl.textContent = 'Loading...';
-            circulatingSupplyEl.textContent = 'Loading...';
-            percentageBurnedEl.textContent = 'Loading...';
-            burned24hEl.textContent = 'Loading...';
-            updateStats();
-        }
-        
         function updateStatus(text, colorClass) {
             statusTextEl.textContent = text;
             statusLightEl.className = `w-3 h-3 rounded-full ${colorClass}`;
@@ -383,7 +272,6 @@
         }
 
         function createParticle() {
-            const activeTheme = tokens[currentTokenId].theme;
             const x = canvas.width / 2;
             const y = canvas.height;
             const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 2);
@@ -393,7 +281,7 @@
                 vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
                 size: 2 + Math.random() * 3,
                 life: 60 + Math.random() * 60, maxLife: 120,
-                color: activeTheme.particleColor()
+                color: `rgba(255, ${Math.random() * 50}, ${100 + Math.random() * 100}, 1)`
             };
         }
 
@@ -421,7 +309,6 @@
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             resizeCanvas();
-            createTokenButtons();
             updateStats();
             setInterval(updateStats, UPDATE_INTERVAL_MS);
             animateParticles();
