@@ -115,16 +115,10 @@
             <span id="status-text">Connecting...</span>
         </div>
     </div>
-    
-    <script>
-        // Vercel Analytics Injection
-        window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
-    </script>
-    <script src="/_vercel/insights/script.js"></script>
 
     <script>
         // --- CONFIGURATION ---
-        const PROXY_ENDPOINT = '/api/getData'; // Our secure serverless function
+        const RPC_URL = 'https://rpc.ankr.com/eth/a5738491e6c6cf706f5fe88588fb63e12abc8b9a7076ef9bee8e2f1f8a6462a4';
         const TOKEN_CONTRACT = '0xc50673EDb3A7b94E8CAD8a7d4E0cD68864E33eDF';
         const DEAD_ADDRESS = '0x000000000000000000000000000000000000dead';
         const TOKEN_DECIMALS = 18;
@@ -145,31 +139,21 @@
         let lastBurnedAmount = 0;
 
         /**
-         * Generic function to call our serverless proxy.
-         * @param {object} body The JSON-RPC request body.
-         * @returns {Promise<any>} The JSON response from the proxy.
-         */
-        async function fetchFromProxy(body) {
-             const response = await fetch(PROXY_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
-            return response.json();
-        }
-
-        /**
          * Fetches the token balance of the dead address.
          * @returns {Promise<number>} The burned amount.
          */
         async function fetchBurnedAmount() {
             const data = `0x70a08231000000000000000000000000${DEAD_ADDRESS.substring(2)}`;
-            const payload = {
-                jsonrpc: '2.0', id: 1, method: 'eth_call',
-                params: [{ to: TOKEN_CONTRACT, data }, 'latest']
-            };
-            const json = await fetchFromProxy(payload);
+            const response = await fetch(RPC_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0', id: 1, method: 'eth_call',
+                    params: [{ to: TOKEN_CONTRACT, data }, 'latest']
+                }),
+            });
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+            const json = await response.json();
             if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
             const balanceBigInt = BigInt(json.result);
             return Number(balanceBigInt) / (10 ** TOKEN_DECIMALS);
@@ -181,11 +165,16 @@
          */
         async function fetchTotalSupply() {
             const data = '0x18160ddd'; // keccak256('totalSupply()') selector
-            const payload = {
-                jsonrpc: '2.0', id: 2, method: 'eth_call',
-                params: [{ to: TOKEN_CONTRACT, data }, 'latest']
-            };
-            const json = await fetchFromProxy(payload);
+            const response = await fetch(RPC_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0', id: 2, method: 'eth_call',
+                    params: [{ to: TOKEN_CONTRACT, data }, 'latest']
+                }),
+            });
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+            const json = await response.json();
             if (json.error) throw new Error(`RPC Error: ${json.error.message}`);
             const supplyBigInt = BigInt(json.result);
             return Number(supplyBigInt) / (10 ** TOKEN_DECIMALS);
@@ -198,8 +187,12 @@
         async function fetch24hBurn() {
             try {
                 // 1. Get the latest block number
-                const blockNumPayload = { jsonrpc: '2.0', id: 3, method: 'eth_blockNumber', params: [] };
-                const blockNumJson = await fetchFromProxy(blockNumPayload);
+                const blockNumResponse = await fetch(RPC_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'eth_blockNumber', params: [] }),
+                });
+                const blockNumJson = await blockNumResponse.json();
                 if (blockNumJson.error) throw new Error(`RPC Error (eth_blockNumber): ${blockNumJson.error.message}`);
                 const latestBlock = parseInt(blockNumJson.result, 16);
 
@@ -217,14 +210,18 @@
                     const fromBlockHex = `0x${fromBlock.toString(16)}`;
                     const toBlockHex = `0x${toBlock.toString(16)}`;
 
-                    const logsPayload = {
-                        jsonrpc: '2.0', id: 4, method: 'eth_getLogs',
-                        params: [{
-                            fromBlock: fromBlockHex, toBlock: toBlockHex, address: TOKEN_CONTRACT,
-                            topics: [ transferEventSignature, null, paddedDeadAddress ]
-                        }]
-                    };
-                    const logsJson = await fetchFromProxy(logsPayload);
+                    const logsResponse = await fetch(RPC_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0', id: 4, method: 'eth_getLogs',
+                            params: [{
+                                fromBlock: fromBlockHex, toBlock: toBlockHex, address: TOKEN_CONTRACT,
+                                topics: [ transferEventSignature, null, paddedDeadAddress ]
+                            }]
+                        }),
+                    });
+                    const logsJson = await logsResponse.json();
                     if (logsJson.error) throw new Error(`RPC Error (eth_getLogs): ${logsJson.error.message}`);
                     if (logsJson.result) {
                          allLogs = allLogs.concat(logsJson.result);
@@ -374,6 +371,10 @@
             animateParticles();
         });
 
+    </script>
+    <script type="module">
+        import { inject } from '@vercel/analytics';
+        inject();
     </script>
 </body>
 </html>
