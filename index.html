@@ -115,7 +115,7 @@
             <span id="status-text">Connecting...</span>
         </div>
     </div>
-
+    
     <script>
         // --- CONFIGURATION ---
         const RPC_URL = 'https://rpc.ankr.com/eth/a5738491e6c6cf706f5fe88588fb63e12abc8b9a7076ef9bee8e2f1f8a6462a4';
@@ -372,10 +372,12 @@
         });
 
     </script>
-    <script type="module">
-        import { inject } from '@vercel/analytics';
-        inject();
+    
+    <!-- Vercel Analytics -->
+    <script>
+      window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
     </script>
+    <script src="/_vercel/insights/script.js"></script>
 </body>
 </html>
 
