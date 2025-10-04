@@ -26,7 +26,7 @@ export default async function handler(req) {
     const burnedAmount = Number(balanceBigInt) / (10 ** TOKEN_DECIMALS)
     const formattedBurned = burnedAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })
 
-    // Create SVG image
+    // Create SVG image (Twitter supports SVG)
     const svg = `
       <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -44,14 +44,14 @@ export default async function handler(req) {
         <text x="600" y="200" font-family="system-ui, sans-serif" font-size="64" font-weight="bold" fill="#ec4899" text-anchor="middle" filter="drop-shadow(0 0 20px rgba(236, 72, 153, 0.8))">$pnkstr burned</text>
         <text x="600" y="350" font-family="system-ui, sans-serif" font-size="120" font-weight="900" fill="url(#text)" text-anchor="middle">${formattedBurned}</text>
         <text x="600" y="450" font-family="system-ui, sans-serif" font-size="32" fill="#f3f4f6" text-anchor="middle" opacity="0.8">Real-time burn tracker</text>
-        <text x="600" y="580" font-family="system-ui, sans-serif" font-size="24" fill="#9ca3af" text-anchor="middle">pnkster.vercel.app</text>
+        <text x="600" y="580" font-family="system-ui, sans-serif" font-size="24" fill="#9ca3af" text-anchor="middle">pnkstr-burn.vercel.app</text>
       </svg>
     `
 
     return new Response(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=60', // Cache for 1 minute
+        'Cache-Control': 'public, max-age=60',
       },
     })
   } catch (e) {
